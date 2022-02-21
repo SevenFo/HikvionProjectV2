@@ -7,20 +7,10 @@ HikvisonHandler::HikvisonHandler(QObject *parent):
     QObject(parent),playPort(0),hasSetupRealPlay(false),runCheckStreamData(true),runCheckSnapedFaceImg(true),
     runCheckDecodedImgData(true),runCheckAudioData(true)
 {
-    TestCFun(); //测试是否能够调用C风格函数
 
     snapedFaceImgData =  new QByteArray(); //存储相机SDK捕捉到的脸部图像
     rawImages = new QVector<QByteArray>(); //原始图片
     inferredImages = new QVector<QByteArray>(); //处理过的图片
-
-
-//    detector.moveToThread(&inferenceThread);
-//    connect(this,&HikvisonHandler::InitDetector,&detector,&Detector::Init,Qt::QueuedConnection);
-//    connect(this,&HikvisonHandler::RunInferredImages,&detector,static_cast<void (Detector:: *)(QVector<QByteArray> *images, QMutex *mutex, QWaitCondition *condi)>(&Detector::InferredImages),Qt::QueuedConnection);
-//    inferenceThread.start();
-//    qDebug("start loading model");
-//    emit InitDetector();
-
 
 
 //****************初始化解码器**********************
@@ -62,10 +52,10 @@ void HikvisonHandler::SetupCamera()
     NET_DVR_USER_LOGIN_INFO struLoginInfo;  //登入信息结构体
     memset(&struLoginInfo,0,sizeof(struLoginInfo));
     qDebug()<<"host:"<<this->host;
-    strcpy_s(struLoginInfo.sDeviceAddress,this->host.toLocal8Bit().data());
+    strcpy(struLoginInfo.sDeviceAddress,this->host.toLocal8Bit().data());
     struLoginInfo.wPort=8000;
-    strcpy_s(struLoginInfo.sUserName ,this->userid.toLocal8Bit().data()); //设备登录用户名
-    strcpy_s(struLoginInfo.sPassword,this->password.toLocal8Bit().data()); //设备登录密码
+    strcpy(struLoginInfo.sUserName ,this->userid.toLocal8Bit().data()); //设备登录用户名
+    strcpy(struLoginInfo.sPassword,this->password.toLocal8Bit().data()); //设备登录密码
 
     NET_DVR_DEVICEINFO_V40 struDeviceInfo;//设备信息(同步登录即pLoginInfo中bUseAsynLogin为0时有效)
     memset(&struDeviceInfo,0,sizeof(struDeviceInfo));
@@ -310,7 +300,7 @@ void HikvisonHandler::yuv2jpg(QByteArray &yuvPicData, cv::Mat &jpg, int w, int h
 {
     cv::Mat yuvPic;
     yuvPic.create(h*1.5,w,CV_8UC1);
-    memcpy_s(yuvPic.data,yuvPicData.size(),yuvPicData.data(),yuvPicData.size());
+    memcpy(yuvPic.data,yuvPicData.data(),yuvPicData.size());
     cv::cvtColor(yuvPic,jpg,cv::COLOR_YUV2BGR_YV12);
 }
 
@@ -321,7 +311,7 @@ void HikvisonHandler::yuv2jpg(QByteArray &yuvPicData, QImage *jpg, int w, int h)
 {
     cv::Mat yuvPic,cvjpg;
     yuvPic.create(h*1.5,w,CV_8UC1);
-    memcpy_s(yuvPic.data,yuvPicData.size(),yuvPicData.data(),yuvPicData.size());
+    memcpy(yuvPic.data,yuvPicData.data(),yuvPicData.size());
     cv::cvtColor(yuvPic,cvjpg,cv::COLOR_YUV2RGB_YV12);
 //    cv::imshow("jgpBGR",cvjpg);
     cv::waitKey(5);
@@ -333,7 +323,7 @@ void HikvisonHandler::yuv2jpg(QByteArray &yuvPicData, QImage *jpg, int w, int h)
 
 }
 
-void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, void *nReserved2)//解码回调函数
+void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, int nReserved2)//解码回调函数
 {
     HikvisonHandler *that = (HikvisonHandler*)nUser;
 
@@ -490,6 +480,7 @@ void HikvisonHandler::CheckSnapedFaceImg()
 }
 
 // 丢弃
+/*
 bool HikvisonHandler::StartDecode()
 {
     checkStreamDataThread = new std::thread(std::bind(&HikvisonHandler::CheckStreamData,this));//检查是否有新的流数据，并对其进行处理
@@ -545,6 +536,7 @@ bool HikvisonHandler::StartDecode()
     hasStartDecode = true;;
     return true;
 }
+*/
 
 /*
  * 初始化人脸检测的API （准备丢弃）

@@ -10,7 +10,7 @@ HikvisonViewer::HikvisonViewer(QQuickItem *parent)
     qDebug()<<"move hikvison to thread";
 
     timerDisplay = new QTimer(parent);
-    timerDisplay->setInterval(10); // 设置刷新频率
+    timerDisplay->setInterval(40); // 设置刷新频率
 
 //    void (HikvisonViewer::*updateImage2)(QImage image) = &HikvisonViewer::updateImage;
 //    connect(hik,&HikvisonHandler::ReceivedData,this,&HikvisonViewer::DisplayImage,Qt::QueuedConnection);
@@ -75,37 +75,16 @@ void HikvisonViewer::DisplayImage()
     auto images = hik->rawImages;
 #define TEST
 #ifdef TEST
-    //video
-//    cv::VideoCapture capture;
-//    capture.open("test.mp4");
-//    if(!capture.isOpened()){
-//        std::cout << "open failed" << std::endl;
-//        return ;
-//    }
-//    cv::Mat frame;
-//    capture >> frame;
-
-
-//    if(frame.empty())
-//    {
-//        std::cout << "play end" << std::endl;
-//        capture.release();
-//        return;
-//    }
-//    capture.release();
-
-    //picture
-    cv::Mat frame = cv::imread("..\\test.jpg");
+    cv::Mat frame = cv::imread("/home/siky/QtProjects/dog.jpg");
     cv::Mat frame_yv12;
     cv::Mat frame_rgb;
-    cv::imshow("jpg pic",frame);
 
     cv::cvtColor(frame,frame_yv12,cv::COLOR_RGB2YUV_YV12);
 
     auto frame_yv12_size = frame_yv12.total() * frame_yv12.elemSize();
     QByteArray tmp_yuv;
     tmp_yuv.resize(frame_yv12_size);
-    memcpy_s(tmp_yuv.data(),tmp_yuv.size(),frame_yv12.data,frame_yv12_size);
+    memcpy(tmp_yuv.data(),frame_yv12.data,frame_yv12_size);
     images->append(tmp_yuv);
 #endif
 
@@ -114,16 +93,16 @@ void HikvisonViewer::DisplayImage()
         cv::Mat jpg_mat;
         QByteArray tmp = images->takeFirst();
 
-//        HikvisonHandler::yuv2jpg(tmp,jpg_mat,704,576);
         cv::Mat yuvPic;
-        yuvPic.create(1600*1.5,1050,CV_8UC1);
-        memcpy_s(yuvPic.data,tmp.size(),tmp.data(),tmp.size());
+        yuvPic.create(576*1.5,768,CV_8UC1); // rows x cols
+        memcpy(yuvPic.data,tmp.data(),tmp.size());
         cv::cvtColor(yuvPic,jpg_mat,cv::COLOR_YUV2RGB_YV12);
-//        cv::waitKey();
-        image = QImage(jpg_mat.data,jpg_mat.cols,jpg_mat.rows,QImage::Format_BGR888);
+
+        image = QImage(jpg_mat.data,768,576,QImage::Format_BGR888);
         this->pixmap = QPixmap::fromImage(image);
         this->updateImage();
     }
+
 }
 
 QString HikvisonViewer::getHost() const

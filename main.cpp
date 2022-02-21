@@ -9,14 +9,12 @@
 int main(int argc, char *argv[])
 {
 
-//    Detector d;
-//    QImage img("dog.jpg");
-//    d.Init();
-//    d.Detect(img);
-
+#ifdef __linux__
+    std::cout <<"Run in linux!"<<std::endl;
+#else
+    std::cout <<"Run in NOT linux!"<<std::endl;
+#endif
     qmlRegisterType<IMageViewer>("siky.ImageViewer",1,0,"ImageViewer");
-    qmlRegisterType<ImageViwerV2>("siky.ImageViwerV2",1,0,"ImageViwerV2");
-
     qmlRegisterType<HikvisonViewer>("siky.HikvisonViewer",1,0,"HikvisonViewer");
     QApplication a(argc, argv);
     QQuickWindow::setGraphicsApi(QSGRendererInterface::GraphicsApi::OpenGL);

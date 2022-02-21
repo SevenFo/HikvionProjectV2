@@ -1,13 +1,14 @@
 ﻿#ifndef HIKVISONHANDLER_H
 #define HIKVISONHANDLER_H
-#ifdef LINUX
+#define NOMINMAX
+#ifdef __linux__
 typedef int LONG ;
+typedef unsigned char* PBYTE;
 #else
 typedef long LONG ;
+#include "windows.h"
 #endif
 //#include "detector.h"
-#define NOMINMAX
-#include "windows.h"
 #include "PlayM4.h"
 #include "HCNetSDK.h"
 #include "thread"
@@ -78,7 +79,7 @@ public:
     static void yuv2jpg(QByteArray &yuvPicData, cv::Mat &jpg, int w, int h);
     static void yuv2jpg(QByteArray &yuvPicData, QImage *jpg, int w, int h);
 
-    static void CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, void* nReserved2);
+    static void CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, int nReserved2);
 
 
 private:

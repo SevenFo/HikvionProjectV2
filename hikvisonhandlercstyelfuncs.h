@@ -1,6 +1,9 @@
 ﻿#ifndef HIKVISONHANDLERCSTYELFUNCS_H
 #define HIKVISONHANDLERCSTYELFUNCS_H
+#define LINUX
+#ifndef LINUX
 #include "windows.h"
+#endif
 #include "PlayM4.h"
 #include "HCNetSDK.h"
 

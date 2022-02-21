@@ -2,7 +2,6 @@
 #define HIKVISONVIEWER_H
 
 
-#include <imageviwerv2.h>
 #include <imageviewer.h>
 #include <hikvisonhandler.h>
 #include <hikvisonhandlercstyelfuncs.h>

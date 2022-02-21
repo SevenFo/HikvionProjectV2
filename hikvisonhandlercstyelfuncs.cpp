@@ -91,7 +91,7 @@ void FaceDetAlarmCallback(  LONG lCommand,NET_DVR_ALARMER *pAlarmer,char *pAlarm
     //人脸抓拍
     case COMM_UPLOAD_FACESNAP_RESULT:{
         qDebug()<<"Get Face Message (snap)";
-        memcpy_s(&struFacenapResult,sizeof(struFacenapResult),pAlarmInfo,((NET_VCA_FACESNAP_RESULT*)pAlarmInfo)->dwSize);
+        memcpy(&struFacenapResult,pAlarmInfo,((NET_VCA_FACESNAP_RESULT*)pAlarmInfo)->dwSize);
         snapedFaceImgMutex.lock();
         qDebug()<<QThread::currentThreadId()<<":dwFaceScore:"<<struFacenapResult.dwFaceScore<<"dwFacePicLen:"<<struFacenapResult.dwFacePicLen<<"byUploadEventDataType:"<<struFacenapResult.byUploadEventDataType<<"fStayDuration:"<<struFacenapResult.fStayDuration<<"dwBackgroundPicLen:"<<struFacenapResult.dwBackgroundPicLen<<"struRect: width:"<<struFacenapResult.struRect.fWidth<<"height:"<<struFacenapResult.struRect.fHeight<<"x:"<<struFacenapResult.struRect.fX<<"y:"<<struFacenapResult.struRect.fY;
         if(snapedFaceImgs.size()<150)
@@ -117,7 +117,7 @@ void FaceDetAlarmCallback(  LONG lCommand,NET_DVR_ALARMER *pAlarmer,char *pAlarm
     }
     }
 }
-void DecodedDataCallback(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, void *nReserved2)//解码回调函数
+void DecodedDataCallback(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, int nReserved2)//解码回调函数
 {
 //    qDebug()<<"copied video data info: ";
 //    qDebug()<<"width: "<<pFrameInfo->nWidth<<" height:"<<pFrameInfo->nHeight<<" rate:"<<pFrameInfo->nFrameRate<<" frameNumber:"<<pFrameInfo->dwFrameNum<<" type:"<<pFrameInfo->nType <<"stamp:"<<pFrameInfo->nStamp;
