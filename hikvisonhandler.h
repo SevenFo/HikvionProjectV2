@@ -39,7 +39,7 @@ public:
     HikvisonHandler(QObject *parent = nullptr);
     virtual ~HikvisonHandler();
 
-    void SetupCamera();//初始化相机、播放器
+    bool SetupCamera();//初始化相机、播放器
     bool SetupFaceDet();
     bool SetupPlayer();
     bool SetupRealPlay(WId winId = NULL);
@@ -57,13 +57,21 @@ public:
      * params
      * */
     bool StartDecodeV2();
+    bool StopDecoding();
+    bool IsLogin();
+    inline bool HasSetupRealPlay(){
+        return hasSetupRealPlay;
+    }
+
 
     bool hasStartedDecode;
+    const int MAX_AUDIO_BUFFER = 100; // 100*0.1s = 10s
 
     QString host,port,userid,password;
 
     QByteArray streamHeadDataBuf,audioDataBuf,streamBodyDataBuf;
 
+    QVector<QByteArray> *audioDatas; // 保存解码得到的音频数据，每个ByteArray代码一帧，大约为:0.1s
     QVector<QByteArray> *rawImages; // 保存的是YUV格式的图片，需要先转成JPG在送入模型
     QVector<QByteArray> *inferredImages;
     QMutex rawImagesMutex;
@@ -80,52 +88,20 @@ public:
     static void yuv2jpg(QByteArray &yuvPicData, QImage *jpg, int w, int h);
 
     static void CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FRAME_INFO *pFrameInfo, void *nUser, int nReserved2);
-
+    static void CallbackFaceDetAlarm(LONG lCommand,NET_DVR_ALARMER *pAlarmer,char *pAlarmInfo,DWORD dwBufLen,void *pUser);
 
 private:
     LONG userID;
     LONG playPort;
     LONG realPlayID;
+    bool isLogin;
     bool hasSetupRealPlay;
-    bool runCheckStreamData;
-    bool runCheckSnapedFaceImg;
-    bool runCheckDecodedImgData;
-    bool runCheckAudioData;
-
-    QByteArray *snapedFaceImgData;
-    QTimer *timerCheckHasNewSnapedImg;
-    QThread *checkNewDataThread;
-
-
-
-
-    std::thread *checkStreamDataThread;
-    std::thread *checkAudioDataThread;
-    std::thread *checkImgDataThread;
-    std::thread *checkSnapedFaceImgThread;
-
-
-    void CheckSnapedImg();
-
-    void CheckStreamData();
-    void CheckAudioData();//decoded by player
-    void CheckImgData();//decoded by player
-    void CheckSnapedFaceImg();
-
 signals:
-    void newSnapedFaceImg(QByteArray *rawData);
+    void getFaceImage(const QByteArray &rawData,const qsizetype score, QSize image_size);
+    void getFaceImage(const QPixmap &pmap);
     void StartInputStreamData();
     void GetAudioData();
-    void hasNewPic(QImage image);
     void ReceivedData(QVector<QByteArray> *images);
-    void HasNewData(char * data, size_t size);
-    void HasNewAudioData(QByteArray audioData);
-    void HasNewSnapedFaceImg(QByteArray faceData);
-    void HasNewDecodedImgData(QByteArray imgData);
-
-    void InitDetector();
-    void RunInferredImages(QVector<QByteArray> *images, QMutex *mutex, QWaitCondition *condi);
-    void DisplayDecodedImages(QVector<QByteArray> *images);
 
     void StartDisplayDecodedImages();
 

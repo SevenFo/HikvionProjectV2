@@ -17,6 +17,8 @@ public:
     IMageViewer(QQuickItem *parent = 0);
     ~IMageViewer();
 
+    Q_PROPERTY(QPixmap pixmap READ getPixmap WRITE updateImage);
+
 protected:
     void paint(QPainter *painter);
     QImage image;
@@ -26,6 +28,13 @@ public slots:
     void updateImage(QByteArray data,int w, int h);
     void UpdateImage(QBuffer *buf);
     void updateImage(QImage i);
+    void updateImage(QPixmap &pm);
+
+    inline QPixmap getPixmap(){
+        return pixmap;
+    }
+
+
 private:
 
 };

@@ -72,9 +72,9 @@ set(Hikvison_LIB_DIRS ${HKVS_ROOT_DIR}/lib ${HKVS_ROOT_DIR}/lib/HCNetSDKCom)
 set(Hikvison_INCLUDE_DIRS ${HKVS_ROOT_DIR}/include)
 set(OpenCV_LIB_DIRS ${OpenCV_ROOT_DIR}/lib)
 set(OpenCV_INCLUDE_DIRS ${OpenCV_ROOT_DIR}/include)
-
-
-
+set(ONNX_DIR onnxruntime-linux-x64-1.10.0)
+set(EIGEN_DIR "eigen-3.4.0")
+link_directories("${ONNX_DIR}/lib")
 
 #if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
 #    message("Build Release")
@@ -115,10 +115,15 @@ endmacro()
 
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets QuickWidgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets QuickWidgets Multimedia REQUIRED)
 
 
-include_directories("./include")
+include_directories(
+    "./include",
+    "include",
+    "./${ONNX_DIR}/include",
+    "./${EIGEN_DIR}"
+    )
 include_directories(${Hikvison_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 link_directories(${OpenCV_LIB_DIRS} ${Hikvison_LIB_DIRS})
@@ -133,6 +138,16 @@ set(PROJECT_SOURCES
         hikvisonhandler.cpp
         hikvisonviewer.cpp
         imageviewer.cpp
+        audiodevice.h
+        audiodevice.cpp
+        CsvPraser.cpp
+        CsvPraser.h
+        transforms.cpp
+        transforms.h
+        crnn.cpp
+        models.h models.cpp
+        audio_handler.h audio_handler.cpp
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -155,7 +170,9 @@ endif()
 
 
 
-target_link_libraries(HikvionProjectV2 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::QuickWidgets ${OpenCV_LIBS} hcnetsdk PlayCtrl )
+target_link_libraries(HikvionProjectV2 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::QuickWidgets Qt${QT_VERSION_MAJOR}::Multimedia
+    ${OpenCV_LIBS} hcnetsdk PlayCtrl onnxruntime soxr)
+
 #target_link_libraries(HikvionProjectV2 PRIVATE paddle_inference.lib libyaml-cppmt.lib glog.lib)
 #target_link_libraries(HikisonProjectV2 PRIVATE megengine);
 #target_compile_definitions(HikvionProjectV2 PRIVATE MGE_DLL_IMPORT_DATA)

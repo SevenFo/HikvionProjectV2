@@ -7,15 +7,14 @@ Rectangle{
     radius: 10;
     width: 200;
     height: 40;
-    color: "#FFFFFF";
-
+    color: Qt.rgba(1,1,1,0.8)
     property string name: "name";
     property string inputDefault: "input..."
     signal editedFinished(string d);
 
 
         Label{
-            leftPadding: 5;
+            padding: p.radius;
             anchors.verticalCenter: parent.verticalCenter;
 
             id: label;
@@ -25,8 +24,7 @@ Rectangle{
         }
 
         TextInput{
-            leftPadding: 5;
-            topPadding: 3;
+            padding: 5;
             anchors.verticalCenter: parent.verticalCenter;
 
             anchors.left: label.right;

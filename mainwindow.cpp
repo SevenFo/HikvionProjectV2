@@ -8,9 +8,6 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    QString runPath = QCoreApplication::applicationDirPath();
-    qDebug()<<runPath;
-
 }
 
 MainWindow::~MainWindow()

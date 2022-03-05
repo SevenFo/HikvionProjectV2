@@ -1,49 +1,47 @@
 ﻿#include "hikvisonhandler.h"
 #include "opencv2/opencv.hpp"
+#include "hikvisonviewer.h"
 
 const int IMAGE_BUFFER_SIZE = 24*5;
+const int IMAGE_WIDTH = 704;
+const int IMAGE_HEIGHT = 576;
 
 HikvisonHandler::HikvisonHandler(QObject *parent):
-    QObject(parent),playPort(0),hasSetupRealPlay(false),runCheckStreamData(true),runCheckSnapedFaceImg(true),
-    runCheckDecodedImgData(true),runCheckAudioData(true)
+    QObject(parent),playPort(0),hasSetupRealPlay(false),isLogin(false),hasStartedDecode(false)
 {
-
-    snapedFaceImgData =  new QByteArray(); //存储相机SDK捕捉到的脸部图像
     rawImages = new QVector<QByteArray>(); //原始图片
+    audioDatas = new QVector<QByteArray>();
     inferredImages = new QVector<QByteArray>(); //处理过的图片
 
 
 //****************初始化解码器**********************
     if(!PlayM4_GetPort(&playPort))
     {
-        qDebug()<<"get player port failed error code:"<<PlayM4_GetLastError(playPort);
+        qWarning()<<"get player port failed error code:"<<PlayM4_GetLastError(playPort);
         return;
     }
-    qDebug()<<"player port:"<<playPort;
+    qInfo()<<"player port:"<<playPort;
 
     if(!PlayM4_SetStreamOpenMode(playPort,0))//此模式（默认）下, 会尽量保正实时性, 防止数据阻塞; 而且数据检查严格
     {
-        qDebug()<<"set stream mode failed error code:"<<PlayM4_GetLastError(playPort);
+        qWarning()<<"set stream mode failed error code:"<<PlayM4_GetLastError(playPort);
         return;
     }
-    qDebug()<<"setup player success";
+    qInfo()<<"setup player success";
 
 
 }
 HikvisonHandler::~HikvisonHandler()
 {
-    runCheckDecodedImgData = false;
-    runCheckSnapedFaceImg =  false;
-    runCheckStreamData = false;
-    runCheckAudioData = false;
-    checkAudioDataThread->join();
-    checkImgDataThread->join();
-    checkSnapedFaceImgThread->join();
-    checkStreamDataThread->join();
+
 }
 
+bool HikvisonHandler::IsLogin()
+{
+    return isLogin;
+}
 
-void HikvisonHandler::SetupCamera()
+bool HikvisonHandler::SetupCamera()
 {
     //*****************初始化相机SDK并登录*****************
     NET_DVR_Init();
@@ -65,8 +63,9 @@ void HikvisonHandler::SetupCamera()
 
     if(userID == -1)
     {
-        qDebug()<<"login failed!";
-        return;
+        qWarning()<<"login failed!";
+        isLogin = false;
+        return false;
     }
     //    qDebug()<<"userid: "<<userID<<" device type:"<<struDeviceInfo.struDeviceV30.wDevType<<" chanNumber:"<<struDeviceInfo.struDeviceV30.byChanNum<<" chanStart"<<struDeviceInfo.struDeviceV30.byStartChan<<" subproto"<<struDeviceInfo.struDeviceV30.bySubProto;
 
@@ -95,8 +94,9 @@ void HikvisonHandler::SetupCamera()
 //    infile.close();
 //    outfile.close();
 
-    qDebug()<<"setup camera success";
-    return;
+    qInfo()<<"setup camera success";
+    isLogin = true;
+    return true;
 }
 
 /*
@@ -137,8 +137,6 @@ bool HikvisonHandler::SetupRealPlay(WId winId)
 */
 bool HikvisonHandler::SetupRealPlayV2(WId winId)
 {
-    qDebug()<<"setting up real play...";
-
     NET_DVR_PREVIEWINFO struPreviewInfo;//实时预览的参数
     struPreviewInfo.dwStreamType = 1;//主流 大分辨率
     struPreviewInfo.dwLinkMode = 0;//TCP
@@ -146,20 +144,20 @@ bool HikvisonHandler::SetupRealPlayV2(WId winId)
     struPreviewInfo.bBlocked = false;
     struPreviewInfo.lChannel = 1;
     realPlayID = NET_DVR_RealPlay_V40(userID,&struPreviewInfo,&HikvisonHandler::CallbackRealData,this);//设置数据回调函数
-#define TEST
+//#define TEST
 #ifdef TEST
     emit StartDisplayDecodedImages();
     hasStartedDecode = true;;
 #endif
     if(realPlayID == -1)
     {
-        qDebug()<<"open real play failed, error code:"<<NET_DVR_GetLastError();
+        qWarning()<<"open real play failed, error code:"<<NET_DVR_GetLastError();
         hasSetupRealPlay = false;
         return false;
     }
     else
     {
-        qDebug()<<"open real stream success";
+        qWarning()<<"open real stream success";
         hasSetupRealPlay = true;
         return true;
     }
@@ -172,11 +170,14 @@ bool HikvisonHandler::SetupRealPlayV2(WId winId)
 */
 bool HikvisonHandler::StopRealPlay()
 {
+    if(!StopDecoding()){
+        qWarning()<<"StopDecoding failed, error code:"<<NET_DVR_GetLastError();
+        return false;
+    }
     auto result = NET_DVR_StopRealPlay(realPlayID);
     if(result == -1)
     {
-        std::cout<<"NET_DVR_StopRealPlay failed, error code:"<<NET_DVR_GetLastError()<<std::endl;
-//        hasSetupRealPlay = true;
+        qWarning()<<"NET_DVR_StopRealPlay failed, error code:"<<NET_DVR_GetLastError();
         return false;
     }
     else
@@ -195,11 +196,9 @@ bool HikvisonHandler::StopRealPlay()
 */
 bool HikvisonHandler::StartDecodeV2()
 {
-
-    qDebug()<<"start decode v2";
     if(!streamHeadDataBuf.size())
     {
-        qDebug()<<"no stream head data";
+        qWarning()<<"no stream head data";
         return false;
     }
     else
@@ -210,7 +209,7 @@ bool HikvisonHandler::StartDecodeV2()
         return false;
     }
 
-    if(!PlayM4_Play(playPort,NULL))
+    if(!PlayM4_Play(playPort,0))
     {
         qDebug()<<"PlayM4_Play failed error code:"<<PlayM4_GetLastError(playPort);
         return false;
@@ -232,15 +231,68 @@ bool HikvisonHandler::StartDecodeV2()
         qDebug()<<"PlayM4_SetVolume failed error code:"<<PlayM4_GetLastError(playPort);
         return false;
     }
-    qDebug()<<"started docoder v2";
+    qInfo()<<"set player sound volume: 100";
+    qInfo()<<"started docoder v2";
 
-
-//    qDebug()<<"try to run inferred images";
-//    detector.runInferredImages=true;
-//    emit RunInferredImages(rawImages,&rawImagesMutex,&rawImagesCondi);
-    emit DisplayDecodedImages(rawImages);
 
     hasStartedDecode = true;;
+
+    SetupFaceDet();
+    return true;
+}
+
+bool HikvisonHandler::StopDecoding()
+{
+    if(!PlayM4_StopSound())
+    {
+        qWarning()<<"PlayM4_StopSound failed error code:"<<PlayM4_GetLastError(playPort);
+        return false;
+    }
+    if(!PlayM4_Stop(playPort))
+    {
+        qWarning()<<"PlayM4_Stop failed error code:"<<PlayM4_GetLastError(playPort);
+        return false;
+    }
+    if(!PlayM4_CloseStream(playPort)){
+        qWarning()<<"PlayM4_CloseStream failed error code:"<<PlayM4_GetLastError(playPort);
+        return false;
+    }
+    hasStartedDecode = false;
+    return true;
+}
+
+/*
+ * 初始化人脸检测的API （准备丢弃）
+ * */
+bool HikvisonHandler::SetupFaceDet()
+{
+    //需要先打开实时预览
+    if(!hasSetupRealPlay)
+    {
+        qWarning()<<"pls setup real play firstly";
+        return false;
+    }
+    //注册回调消息回调函数
+    if(!NET_DVR_SetDVRMessageCallBack_V50(1,&this->CallbackFaceDetAlarm,this))
+        return false;
+
+    //警示消息的参数
+    NET_DVR_SETUPALARM_PARAM *struSetupAlarmParam = new NET_DVR_SETUPALARM_PARAM();
+    memset(struSetupAlarmParam,0,struSetupAlarmParam->dwSize);
+    struSetupAlarmParam->dwSize = sizeof(NET_DVR_SETUPALARM_PARAM);
+    struSetupAlarmParam->byLevel = 0;
+    struSetupAlarmParam->byFaceAlarmDetection = 0;
+    struSetupAlarmParam->byAlarmTypeURL = 0;//二进制传输
+    //打开通道
+    auto alarmChanHandler = NET_DVR_SetupAlarmChan_V41(userID,struSetupAlarmParam);
+    delete struSetupAlarmParam;
+
+    if(alarmChanHandler == -1)
+    {
+        qDebug()<<"SetupAlarmChan failed, error code:"<<NET_DVR_GetLastError();
+        return false;
+    }
+    qInfo()<<"face detector set up";
     return true;
 }
 
@@ -330,7 +382,18 @@ void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FR
     switch(pFrameInfo->nType)
     {
     case T_AUDIO16:{
-        that->audioDataBuf = QByteArray((char *)(pBuf),nSize);
+        // ch: pFrameInfo->nWidth : 1
+        // sample rate: pFrameInfo->nFrameRate : 8000
+        auto audioDataBuf = QByteArray((char *)(pBuf),nSize);
+        if(that->audioDatas->size() < that->MAX_AUDIO_BUFFER)
+        {
+            that->audioDatas->append(audioDataBuf);
+        }
+        else
+        {
+            qDebug()<<"warm: audio buff full";
+        }
+//        qDebug()<<"ch: "<<pFrameInfo->nWidth<<" sample rate:"<<pFrameInfo->nFrameRate<<" time stamp:"<<pFrameInfo->nStamp<<" 样位率:"<<pFrameInfo->nHeight<<" bytes size:"<<nSize;
         break;
     }
     case  T_YV12:{
@@ -342,10 +405,14 @@ void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FR
 //        that->rawImagesMutex.lock();
         if(that->rawImages->size()<IMAGE_BUFFER_SIZE)
         {
-            qDebug()<<"add an image";
+//            qDebug()<<"add an image("<<pFrameInfo->nHeight<<"x"<<pFrameInfo->nWidth;
             that->rawImages->append(tmp);
 //            that->rawImagesMutex.unlock();
             that->rawImagesCondi.notify_all();
+        }
+        else
+        {
+            qDebug()<<"warm: image buffer full!";
         }
 //        that->rawImagesMutex.unlock();
         break;
@@ -357,6 +424,52 @@ void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FR
     }
     }
     return ;
+}
+/*
+ * const int IMAGE_WIDTH = 704;
+ * const int IMAGE_HEIGHT = 576;
+ *
+ * */
+void HikvisonHandler::CallbackFaceDetAlarm(LONG lCommand, NET_DVR_ALARMER *pAlarmer, char *pAlarmInfo, DWORD dwBufLen, void *pUser)
+{
+    auto that = (HikvisonHandler*)pUser;
+    NET_VCA_FACESNAP_RESULT struFacenapResult;
+    NET_DVR_FACE_DETECTION struFaceDetection;
+    QFile f = QFile("pic.jpg");
+    switch(lCommand)
+    {
+    //人脸抓拍
+    case COMM_UPLOAD_FACESNAP_RESULT:{
+        memcpy(&struFacenapResult,pAlarmInfo,((NET_VCA_FACESNAP_RESULT*)pAlarmInfo)->dwSize);
+//        qDebug()<<QThread::currentThreadId()<<":dwFaceScore:"<<struFacenapResult.dwFaceScore<<"dwFacePicLen:"<<struFacenapResult.dwFacePicLen<<\
+                  "byUploadEventDataType:"<<struFacenapResult.byUploadEventDataType<<\
+                  "fStayDuration:"<<struFacenapResult.fStayDuration<<\
+                  "dwBackgroundPicLen:"<<struFacenapResult.dwBackgroundPicLen<<\
+                  "struRect: width:"<<struFacenapResult.struRect.fWidth<<\
+                  "height:"<<struFacenapResult.struRect.fHeight<<\
+                  "x:"<<struFacenapResult.struRect.fX<<"y:"<<struFacenapResult.struRect.fY<<\
+                  ", target fWidth:"<<struFacenapResult.struTargetInfo.struRect.fWidth<<\
+                  ", fHeight:"<<struFacenapResult.struTargetInfo.struRect.fWidth;
+        auto facepic_data = QByteArray((char *)(((NET_VCA_FACESNAP_RESULT*)pAlarmInfo)->pBuffer1),((NET_VCA_FACESNAP_RESULT*)pAlarmInfo)->dwFacePicLen);
+        f.open(QFile::WriteOnly); //必须写入在读出来才可以很奇怪
+        f.write(facepic_data);
+        f.close();
+        QPixmap pixmap("pic.jpg");
+        emit that->getFaceImage(pixmap);
+        break;
+    }
+    //人脸侦测
+    case COMM_ALARM_FACE_DETECTION:{
+
+        break;
+        }
+
+    default:
+    {
+        qDebug()<<"use less msg";
+        break;
+    }
+    }
 }
 
 
@@ -393,91 +506,91 @@ void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FR
 /*
  * 检查是否有新的流数据，如有新的数据，则调用playerAPI对数据进行解码并显示
  * */
-void HikvisonHandler::CheckStreamData()
-{
-    qDebug()<<"run CheckStreamData thread:"<<QThread::currentThreadId() <<runCheckStreamData;
-    streamDataCondi.wakeAll();
-    while(runCheckStreamData)
-    {
-        dataMutex.lock();
-        checkerReady = true;
-        streamNewDataCondi.wait(&dataMutex);//释放锁，等待新数据
-        checkerReady = false;
-//        emit HasNewData((char *)streamDataBuff,streamDataBuffSize);//得到新数据，发射信号
-        if(!PlayM4_InputData(playPort,(PBYTE)streamDataBuff,streamDataBuffSize))
-        {
-            qDebug()<<"input stream data failed error code::"<<PlayM4_GetLastError(playPort);
-            return;
-        }
-        dataMutex.unlock();
-        //此时，callback还没lock，checker unlock，没有人拥有mutex
-        streamDataCondi.notify_one();
-    }
-    qDebug()<<"stop stream checker";
-}
+//void HikvisonHandler::CheckStreamData()
+//{
+//    qDebug()<<"run CheckStreamData thread:"<<QThread::currentThreadId() <<runCheckStreamData;
+//    streamDataCondi.wakeAll();
+//    while(runCheckStreamData)
+//    {
+//        dataMutex.lock();
+//        checkerReady = true;
+//        streamNewDataCondi.wait(&dataMutex);//释放锁，等待新数据
+//        checkerReady = false;
+////        emit HasNewData((char *)streamDataBuff,streamDataBuffSize);//得到新数据，发射信号
+//        if(!PlayM4_InputData(playPort,(PBYTE)streamDataBuff,streamDataBuffSize))
+//        {
+//            qDebug()<<"input stream data failed error code::"<<PlayM4_GetLastError(playPort);
+//            return;
+//        }
+//        dataMutex.unlock();
+//        //此时，callback还没lock，checker unlock，没有人拥有mutex
+//        streamDataCondi.notify_one();
+//    }
+//    qDebug()<<"stop stream checker";
+//}
 
-void HikvisonHandler::CheckAudioData()
-{
-    qDebug()<<"run thread:"<<QThread::currentThreadId();
-//    audioDataCondi.wakeAll();
-    while(runCheckAudioData)
-    {
-        audioDataMutex.lock();
-        while(audioDatas.isEmpty())
-        {
-//            qDebug()<<"snaped face img buff is empty wait";
-           audioDataEmptyCondi.wait(&audioDataMutex);
-        }
-        //have data
-        QByteArray data = audioDatas.takeFirst();
-        audioDataMutex.unlock();
-        emit HasNewAudioData(data);
-        audioDataFullCondi.notify_one();
-        //通知完过后，回调函数线程被唤醒，但要等待check线程wait之后他才能lock（反正回调函数执行过快，在checkaudiowait之前就notify），才能通知checkemit
-        //正常应该是若缓冲区是满的，则callback wati等待emit，如果缓冲区是空的，说明check执行的比callback快，就没必要wait了
-        //对于check来说，若缓冲区是空的，则等待，非则就不需要等待
-        //在这里是不管怎么样check都等待，即默认callback的速度比checker慢
-    }
-    qDebug()<<"stop audio checker";
-}
+//void HikvisonHandler::CheckAudioData()
+//{
+//    qDebug()<<"run thread:"<<QThread::currentThreadId();
+////    audioDataCondi.wakeAll();
+//    while(runCheckAudioData)
+//    {
+//        audioDataMutex.lock();
+//        while(audioDatas.isEmpty())
+//        {
+////            qDebug()<<"snaped face img buff is empty wait";
+//           audioDataEmptyCondi.wait(&audioDataMutex);
+//        }
+//        //have data
+//        QByteArray data = audioDatas.takeFirst();
+//        audioDataMutex.unlock();
+//        emit HasNewAudioData(data);
+//        audioDataFullCondi.notify_one();
+//        //通知完过后，回调函数线程被唤醒，但要等待check线程wait之后他才能lock（反正回调函数执行过快，在checkaudiowait之前就notify），才能通知checkemit
+//        //正常应该是若缓冲区是满的，则callback wati等待emit，如果缓冲区是空的，说明check执行的比callback快，就没必要wait了
+//        //对于check来说，若缓冲区是空的，则等待，非则就不需要等待
+//        //在这里是不管怎么样check都等待，即默认callback的速度比checker慢
+//    }
+//    qDebug()<<"stop audio checker";
+//}
 
-void HikvisonHandler::CheckImgData()
-{
-    qDebug()<<"run thread:"<<QThread::currentThreadId();
-//    audioDataCondi.wakeAll();
-    while(runCheckDecodedImgData)
-    {
-        decodedImgMutex.lock();
-        while(decodedImgs.isEmpty())
-        {
-           decodedImgEmptyCondi.wait(&decodedImgMutex);
-        }
-        //have data
-        QByteArray data = decodedImgs.takeFirst();
-        decodedImgMutex.unlock();
-        emit HasNewDecodedImgData(data);
-        decodedImgFullCondi.notify_one();
-    }
-    qDebug()<<"stop img checker";
-}
+//void HikvisonHandler::CheckImgData()
+//{
+//    qDebug()<<"run thread:"<<QThread::currentThreadId();
+////    audioDataCondi.wakeAll();
+//    while(runCheckDecodedImgData)
+//    {
+//        decodedImgMutex.lock();
+//        while(decodedImgs.isEmpty())
+//        {
+//           decodedImgEmptyCondi.wait(&decodedImgMutex);
+//        }
+//        //have data
+//        QByteArray data = decodedImgs.takeFirst();
+//        decodedImgMutex.unlock();
+//        emit HasNewDecodedImgData(data);
+//        decodedImgFullCondi.notify_one();
+//    }
+//    qDebug()<<"stop img checker";
+//}
 
-void HikvisonHandler::CheckSnapedFaceImg()
-{
-    while(runCheckSnapedFaceImg)
-    {
-        snapedFaceImgMutex.lock();
-        while(snapedFaceImgs.isEmpty())
-        {
-            snapedFaceImgEmptyCondi.wait(&snapedFaceImgMutex);
-        }
-        //have data
-        auto data = snapedFaceImgs.takeFirst();
-        snapedFaceImgMutex.unlock();
-        emit HasNewSnapedFaceImg(data);
-        snapedFaceImgFullCondi.notify_one();
-    }
-    qDebug()<<"stop snap checker";
-}
+//void HikvisonHandler::CheckSnapedFaceImg()
+//{
+//    while(runCheckSnapedFaceImg)
+//    {
+//        snapedFaceImgMutex.lock();
+//        while(snapedFaceImgs.isEmpty())
+//        {
+//            snapedFaceImgEmptyCondi.wait(&snapedFaceImgMutex);
+//        }
+//        //have data
+//        auto data = snapedFaceImgs.takeFirst();
+//        snapedFaceImgMutex.unlock();
+//        emit HasNewSnapedFaceImg(data);
+//        snapedFaceImgFullCondi.notify_one();
+//    }
+//    qDebug()<<"stop snap checker";
+//}
 
 // 丢弃
 /*
@@ -538,51 +651,16 @@ bool HikvisonHandler::StartDecode()
 }
 */
 
-/*
- * 初始化人脸检测的API （准备丢弃）
- * */
-bool HikvisonHandler::SetupFaceDet()
-{
-    //需要先打开实时预览
-    if(!hasSetupRealPlay)
-    {
-        qDebug()<<"pls setup real play firstly";
-        return false;
-    }
-    //注册回调消息回调函数
-    if(!NET_DVR_SetDVRMessageCallBack_V50(1,&FaceDetAlarmCallback,NULL))
-        return false;
 
-    //警示消息的参数
-    NET_DVR_SETUPALARM_PARAM *struSetupAlarmParam = new NET_DVR_SETUPALARM_PARAM();
-    memset(struSetupAlarmParam,0,struSetupAlarmParam->dwSize);
-    struSetupAlarmParam->dwSize = sizeof(NET_DVR_SETUPALARM_PARAM);
-    struSetupAlarmParam->byLevel = 0;
-    struSetupAlarmParam->byFaceAlarmDetection = 0;
-    struSetupAlarmParam->byAlarmTypeURL = 0;//二进制传输
-    //打开通道
-    auto alarmChanHandler = NET_DVR_SetupAlarmChan_V41(userID,struSetupAlarmParam);
-    delete struSetupAlarmParam;
 
-    if(alarmChanHandler == -1)
-    {
-        qDebug()<<"SetupAlarmChan failed, error code:"<<NET_DVR_GetLastError();
-        return false;
-    }
-
-    qDebug()<<"seted face det"<<QThread::currentThreadId();
-    checkSnapedFaceImgThread = new std::thread(std::bind(&HikvisonHandler::CheckSnapedFaceImg,this));//在新的线程中检查是否有新的人脸抓拍图像
-    return true;
-}
-
-//？？？
-bool HikvisonHandler::GetSnapedFaceImg(QByteArray *dist)
-{
-    if(!havNewSnapedFaceImg)
-    {
-        return false;
-    }
-    dist->clear();
-    dist->append(*snapedFaceImgData);
-    return true;
-}
+////？？？
+//bool HikvisonHandler::GetSnapedFaceImg(QByteArray *dist)
+//{
+//    if(!havNewSnapedFaceImg)
+//    {
+//        return false;
+//    }
+//    dist->clear();
+//    dist->append(*snapedFaceImgData);
+//    return true;
+//}

@@ -90,7 +90,6 @@ void FaceDetAlarmCallback(  LONG lCommand,NET_DVR_ALARMER *pAlarmer,char *pAlarm
     {
     //人脸抓拍
     case COMM_UPLOAD_FACESNAP_RESULT:{
-        qDebug()<<"Get Face Message (snap)";
         memcpy(&struFacenapResult,pAlarmInfo,((NET_VCA_FACESNAP_RESULT*)pAlarmInfo)->dwSize);
         snapedFaceImgMutex.lock();
         qDebug()<<QThread::currentThreadId()<<":dwFaceScore:"<<struFacenapResult.dwFaceScore<<"dwFacePicLen:"<<struFacenapResult.dwFacePicLen<<"byUploadEventDataType:"<<struFacenapResult.byUploadEventDataType<<"fStayDuration:"<<struFacenapResult.fStayDuration<<"dwBackgroundPicLen:"<<struFacenapResult.dwBackgroundPicLen<<"struRect: width:"<<struFacenapResult.struRect.fWidth<<"height:"<<struFacenapResult.struRect.fHeight<<"x:"<<struFacenapResult.struRect.fX<<"y:"<<struFacenapResult.struRect.fY;
