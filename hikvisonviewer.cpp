@@ -25,7 +25,7 @@ HikvisonViewer::HikvisonViewer(QQuickItem *parent):IMageViewer(parent)
 //    audiohandler->moveToThread(&audio_handler_thread); //等调试通过之后在放到新的线程里面
 
     timerDisplay = new QTimer(this);
-    timerDisplay->setInterval(1000/25); // 设置刷新频率25Hz
+    timerDisplay->setInterval(1000/30); // 设置刷新频率30Hz
 
 
     // 暂时固定参数，后面可以自行更改

@@ -1,4 +1,5 @@
 #include "audiodevice.h"
+#include <QFile>
 //还少了一个位深度才能计算readysize
 AudioDevice::AudioDevice(QObject *parent):
     QIODevice{parent},
@@ -15,12 +16,13 @@ AudioDevice::AudioDevice(QObject *parent):
 
 }
 AudioDevice::AudioDevice(qint64 sample_rate, qint64 sample_bit_deep,QObject *parent):
+    //默认应该是16位深度，长度4s -> size: 8000*16/8*4=64000
     QIODevice{parent},
     pcm_data_offset(0),
     sample_rate(sample_rate),
-    readydura(9),
+    readydura(4),
     sample_bit_deep(sample_bit_deep),
-    readysize(72000*2),
+    readysize(64000),
     counter(0)
 {
     if(!open(ReadOnly))
@@ -39,10 +41,10 @@ AudioDevice::~AudioDevice()
 qint64 AudioDevice::fill(const QByteArray &data)
 {
     pcm_data.append(data);
-//    qInfo()<<"pcm_data size:"<<pcm_data.size();
     if(pcm_data.size()/readysize>counter)
     {
-        emit ready(QByteArray(pcm_data.data()+(counter++*readysize),readysize),sample_rate,sample_bit_deep,readysize/(sample_bit_deep/8));
+        QByteArray tmp(pcm_data.data()+(counter++*readysize),readysize);
+        emit ready(tmp,sample_rate,sample_bit_deep,readysize/(sample_bit_deep/8));
         qDebug()<<"ready counter:"<<counter;
     }
     return pcm_data.size();

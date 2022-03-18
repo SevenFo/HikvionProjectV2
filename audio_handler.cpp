@@ -36,6 +36,7 @@ void audio_handler::inferate(QByteArray d, qint64 sample_rate, qint64 sample_siz
     std::vector<float> result;
 
     qsizetype index = 0;
+    //归一化，转化为float类型
     for(float & item:audio_data)
     {
         item = (float)(*((short *)&d[index])) / pow(2,16)*2;
@@ -90,6 +91,7 @@ bool audio_handler::resample(qsizetype in_rate, qsizetype out_rate, const QByteA
 bool audio_handler::resample(qsizetype in_rate, qsizetype out_rate, const std::vector<float> &indata, std::vector<float> &outdata)
 {
     std::cout <<"resample..."<<std::endl;
+    QFile file_t("test_file_after_resample.pem");//    qInfo()<<"pcm_data size:"<<pcm_data.size();
     qsizetype channel = 1;
     auto outsize = static_cast<qsizetype>(static_cast<float>(out_rate)/in_rate*indata.size())+1;
     size_t rsize = outsize;
@@ -117,22 +119,4 @@ bool audio_handler::resample(qsizetype in_rate, qsizetype out_rate, const std::v
 
     return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
