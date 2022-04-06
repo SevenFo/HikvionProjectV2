@@ -394,10 +394,12 @@ void HikvisonHandler::CallbackDecodedData(LONG nPort, char *pBuf, LONG nSize, FR
             qDebug()<<"warm: audio buff full";
         }
 //        qDebug()<<"ch: "<<pFrameInfo->nWidth<<" sample rate:"<<pFrameInfo->nFrameRate<<" time stamp:"<<pFrameInfo->nStamp<<" 样位率:"<<pFrameInfo->nHeight<<" bytes size:"<<nSize;
+//        qDebug()<<"audio time stamp:"<<pFrameInfo->nStamp;
         break;
     }
     case  T_YV12:{
         QByteArray tmp = QByteArray((char *)pBuf,nSize);//读取数据到QByteArray中
+//        qDebug()<<"video time stamp:"<<pFrameInfo->nStamp;
 
 //        QMutexLocker locker(&that->rawImagesMutex);//lock
 //        qDebug()<<"locking mutex @:"<<QThread::currentThread();

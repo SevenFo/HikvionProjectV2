@@ -17,10 +17,8 @@ audio_handler::~audio_handler()
 }
 
 
-
-void audio_handler::inferate(QByteArray d, qint64 sample_rate, qint64 sample_size, qint64 sample_length)
+void audio_handler::doInferate(QByteArray d, qint64 sample_rate, qint64 sample_size, qint64 sample_length)
 {
-
     if(!isOpen)
         return;
     if(sample_length != d.size()/(sample_size/8))
@@ -53,11 +51,8 @@ void audio_handler::inferate(QByteArray d, qint64 sample_rate, qint64 sample_siz
     {
         qWarning()<<"infer error!";
     }
-    qInfo()<<"result:";
-    for(auto item : result)
-    {
-        qInfo()<<item;
-    }
+
+    emit inferatFinished(result);
 }
 
 
@@ -90,8 +85,6 @@ bool audio_handler::resample(qsizetype in_rate, qsizetype out_rate, const QByteA
 
 bool audio_handler::resample(qsizetype in_rate, qsizetype out_rate, const std::vector<float> &indata, std::vector<float> &outdata)
 {
-    std::cout <<"resample..."<<std::endl;
-    QFile file_t("test_file_after_resample.pem");//    qInfo()<<"pcm_data size:"<<pcm_data.size();
     qsizetype channel = 1;
     auto outsize = static_cast<qsizetype>(static_cast<float>(out_rate)/in_rate*indata.size())+1;
     size_t rsize = outsize;

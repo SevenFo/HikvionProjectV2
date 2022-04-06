@@ -41,15 +41,19 @@ AudioDevice::~AudioDevice()
 qint64 AudioDevice::fill(const QByteArray &data)
 {
     pcm_data.append(data);
-    if(pcm_data.size()/readysize>counter)
-    {
-        QByteArray tmp(pcm_data.data()+(counter++*readysize),readysize);
-        emit ready(tmp,sample_rate,sample_bit_deep,readysize/(sample_bit_deep/8));
-        qDebug()<<"ready counter:"<<counter;
-    }
     return pcm_data.size();
 }
-
+QByteArray AudioDevice::getLatestData(qint64 dua){
+   auto data_size = dua*sample_rate*sample_bit_deep/8;
+   if(pcm_data.size() - data_size < 0)
+   {
+       qDebug()<<"audio data is not ready, wait, ("<<pcm_data.size()<<"<"<<data_size<<")";
+       return QByteArray();
+   }
+   auto tmp = pcm_data.sliced(pcm_data.size()-data_size,data_size);
+   emit ready(tmp,sample_rate,sample_bit_deep,readysize/(sample_bit_deep/8));
+   return tmp;
+}
 qint64 AudioDevice::readData(char *data, qint64 maxlen)
 {
     if(pcm_data_offset > pcm_data.size())
@@ -59,10 +63,11 @@ qint64 AudioDevice::readData(char *data, qint64 maxlen)
     }
 
     auto reallen = (pcm_data.size() - pcm_data_offset) > maxlen ? maxlen:(pcm_data.size() - pcm_data_offset); // 是否填充最大缓冲区
-//    qDebug()<<"try push data:"<<reallen;
+//    qDebug()<<"try push data:"<<reallen<<", maxlen:"<<maxlen;
     memcpy(data, pcm_data.data()+pcm_data_offset,reallen);
     pcm_data_offset += reallen;
     return pcm_data_offset;
+
 }
 
 qint64 AudioDevice::writeData(const char *data, qint64 len)

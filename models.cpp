@@ -56,14 +56,13 @@ bool Models::_initCRNN()
 
 bool Models::infer(std::vector<float> &audio_data, std::vector<float> &result)
 {
-    std::cout <<"infering..."<<std::endl;
-    int sr = 8000;
+    int sr = 44100;
     int length = audio_data.size();
     auto infer_start_time = std::chrono::system_clock::now();
 
     Vectorf data = Eigen::Map<Vectorf>(audio_data.data(),audio_data.size()); //转化为Eigen用于计算mel
     Matrixf testsound_spec = mel_sepctrogram(data,sr); //mel result
-    std::cout <<"data size:"<<data.cols()<<"mel reslut: shape:"<<testsound_spec.rows() <<"x"<<testsound_spec.cols()<<std::endl;
+    std::cout <<"data size: "<<data.cols()<<"; mel reslut: shape:"<<testsound_spec.rows() <<"x"<<testsound_spec.cols()<<std::endl;
     if(testsound_spec.cols() < 64)
     {
         std::cerr <<"mel result to short to infer!"<<std::endl;
@@ -92,16 +91,11 @@ bool Models::infer(std::vector<float> &audio_data, std::vector<float> &result)
     auto output_typeinfo = output_tensors[0].GetTypeInfo().GetTensorTypeAndShapeInfo().GetShape();
     auto result_tmp = output_tensors[0].GetTensorMutableData<float>();
     result.resize(5);
-    std::cout <<"result:";
     for(int i =0;i<5;i++)
     {
-//        std::cout<<exp(result_tmp[i])<<",";
-//        qInfo()<<exp(result_tmp[i])<<",";
         result[i] = exp(result_tmp[i]);
-
     }
-//    std::cout<<std::endl;
     auto infer_end_time = std::chrono::system_clock::now();
-    std::cout <<" time take "<<std::chrono::duration_cast<std::chrono::milliseconds>(   infer_end_time-infer_start_time).count()<<std::endl;
+    std::cout <<"audio infer time take "<<std::chrono::duration_cast<std::chrono::milliseconds>(   infer_end_time-infer_start_time).count()<<std::endl;
     return true;
 }

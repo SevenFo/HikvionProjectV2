@@ -11,8 +11,9 @@ Rectangle {
     width: 1920
     height: 1080
     visible: true
-    color: Qt.rgba(0.94,0.94,0.94,1)
+    color: "#ffffff"
     radius: 30
+    border.color: "#ffffff"
     /*
  *  1. 所有的大方格都要有 margins 10， 即每个大块之间间隔20px
  *  2. 内部元素拥有 padding 5，即每个元素之间间隔5px
@@ -184,6 +185,99 @@ Rectangle {
                         }
                     }
                 }
+
+                Text {
+                    id: textCarStatus
+                    text: qsTr("车辆行驶状态")
+                    font.pixelSize: 30
+                    font.bold: true
+                }
+
+                Rectangle {
+                    width: 300
+                    height: 223
+                    color: Qt.rgba(1,1,1,0.8)
+                    radius: 10
+                    Column {
+                        id: columnControlPanel1
+                        padding: 20
+                        Row {
+
+                            Text {
+                                id: text1
+                                text: qsTr("驾驶员状态：")
+                                font.pixelSize: 16
+                                padding: 6
+                                rightPadding: 6
+                                leftPadding: 6
+                                bottomPadding: 6
+                                topPadding: 6
+                            }
+                        }
+
+                        Row {
+
+                            Text {
+                                id: text2
+                                text: qsTr("发动机转速：")
+                                font.pixelSize: 16
+                                topPadding: 6
+                                bottomPadding: 6
+                                padding: 6
+                                rightPadding: 6
+                                leftPadding: 6
+                            }
+                        }
+
+                        Row {
+
+                            Text {
+                                id: text3
+                                text: qsTr("制动踏板角度：")
+                                font.pixelSize: 16
+                                topPadding: 6
+                                bottomPadding: 6
+                                padding: 6
+                                rightPadding: 6
+                                leftPadding: 6
+                            }
+
+                            Text {
+                                id: text4
+                                text: qsTr("方向盘角度：")
+                                font.pixelSize: 16
+                                topPadding: 6
+                                bottomPadding: 6
+                                padding: 6
+                                rightPadding: 6
+                                leftPadding: 6
+                            }
+                        }
+
+                        Row {
+                            Text {
+                                id: text5
+                                text: qsTr("车厢状态：")
+                                font.pixelSize: 16
+                                topPadding: 6
+                                bottomPadding: 6
+                                padding: 6
+                                rightPadding: 6
+                                leftPadding: 6
+                            }
+                        }
+
+                        spacing: 10
+                        enabled: true
+                    }
+                }
+
+                Text {
+                    id: textAlarmLevel
+                    text: qsTr("警报等级")
+                    font.pixelSize: 30
+                    font.bold: true
+                }
             }
         }
 
@@ -192,51 +286,51 @@ Rectangle {
 
     Connections{
         target: hikvison
-       function onGetSnapedImage(pixmap,width,height){
-           snapedFaceViewer.pixmap = pixmap;
-           snapedFaceViewer.width = width;
-           snapedFaceViewer.height = height
-                          }
+        function onGetSnapedImage(pixmap,width,height){
+            snapedFaceViewer.pixmap = pixmap;
+            snapedFaceViewer.width = width;
+            snapedFaceViewer.height = height
+        }
 
-       function onLoginStateChanged(){
-                                 if(hikvison.is_login === true)
-                                 {
-                                     buttonSetupCameraText.text="退出";
-                                     switchStartDecode.enabled = true;
-                                     buttonSetupCameraBackground.color=Qt.rgba(0.8,0.0,0.0,0.5)
-                                     buttonSetupCameraText.color = Qt.rgba(1.0,1.0,1.0,1.0)
+        function onLoginStateChanged(){
+            if(hikvison.is_login === true)
+            {
+                buttonSetupCameraText.text="退出";
+                switchStartDecode.enabled = true;
+                buttonSetupCameraBackground.color=Qt.rgba(0.8,0.0,0.0,0.5)
+                buttonSetupCameraText.color = Qt.rgba(1.0,1.0,1.0,1.0)
 
 
-                                 }
-                                 else{
-                                     buttonSetupCameraText.text="登入";
-                                     switchStartDecode.enabled = true
-                                     buttonSetupCameraText.color = "#000000"
-                                     buttonSetupCameraText.color= buttonSetupCamera.down ? "#d0d0d0" : Qt.rgba(1.0,1.0,1.0,0.8)
+            }
+            else{
+                buttonSetupCameraText.text="登入";
+                switchStartDecode.enabled = true
+                buttonSetupCameraText.color = "#000000"
+                buttonSetupCameraText.color= buttonSetupCamera.down ? "#d0d0d0" : Qt.rgba(1.0,1.0,1.0,0.8)
 
-                                 }
-                             }
+            }
+        }
         function onOpenVideoStateChange(){
-                                     if(hikvison.is_open_video === true)
-                                     {
-                                         switchStartDecode.text = "视频已开启";
-                                         switchModeClassificaton.enabled = true;
-                                         switchAudioClassification.enabled = true;
-                                         switchTiredJudger.enabled = true;
-                                     }
-                                     else
-                                     {
-                                         switchStartDecode.text = "视频已关闭";
-                                         switchModeClassificaton.enabled = false;
-                                         switchAudioClassification.enabled = false;
-                                         switchTiredJudger.enabled = false;
-                                     }
-                                 }
+            if(hikvison.is_open_video === true)
+            {
+                switchStartDecode.text = "视频已开启";
+                switchModeClassificaton.enabled = true;
+                switchAudioClassification.enabled = true;
+                switchTiredJudger.enabled = true;
+            }
+            else
+            {
+                switchStartDecode.text = "视频已关闭";
+                switchModeClassificaton.enabled = false;
+                switchAudioClassification.enabled = false;
+                switchTiredJudger.enabled = false;
+            }
+        }
     }
 }
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.5}
+    D{i:0;formeditorZoom:0.75}D{i:42}
 }
 ##^##*/

@@ -17,6 +17,7 @@ public:
     qint64 readData(char *data, qint64 maxlen);
     qint64 writeData(const char *data, qint64 len);
     qint64 bytesAvailable() const;
+    QByteArray getLatestData(qint64 dua);
 
     inline void set_sample_rate(qint64 sr){
         sample_rate = sr;
@@ -48,6 +49,7 @@ private:
 
 signals:
     void ready(QByteArray d, qint64 sample_rate, qint64 sample_size, qint64 sample_length);
+    void testSignal();
 };
 
 #endif // AUDIODEVICE_H

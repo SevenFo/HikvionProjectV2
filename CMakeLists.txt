@@ -19,11 +19,11 @@ IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(OpenCV_ROOT_DIR /home/siky/Applications/opencv/build/install)
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-        set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs)
+        set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_objdetect)
 
     else()
         message("BUILD DEBUG")
-        set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs)
+        set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_objdetect)
     endif()
 
 
@@ -147,6 +147,7 @@ set(PROJECT_SOURCES
         crnn.cpp
         models.h models.cpp
         audio_handler.h audio_handler.cpp
+        imagehandler.h imagehandler.cpp
 
 )
 

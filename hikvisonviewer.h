@@ -12,6 +12,7 @@
 #include <audiodevice.h>
 #include <QAudioSink>
 #include "audio_handler.h"
+#include <imagehandler.h>
 //#include <QQuickImageProvider>
 
 //class SnapedFaceImageProvider
@@ -59,11 +60,14 @@ signals:
 
 private:
     HikvisonHandler *hik;
+    ImageHandler *image_handler;
     audio_handler *audiohandler;
     QAudioSink *audio_sink; //输出音频
     AudioDevice *audio_device;
-    QThread hikvisonThread, audio_handler_thread;
+    QThread hikvisonThread, *audio_handler_thread, *image_handler_thread;
     QTimer *timerDisplay;
+    QTimer * delayPlayAudioTimer;
+    QTimer *inferAudioTimer;
 
     bool is_login;
 
