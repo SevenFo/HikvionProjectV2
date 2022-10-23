@@ -4,7 +4,7 @@
 ImageHandler::ImageHandler(QObject *parent)
     : QObject{parent}
 {
-
+    cnn_model = new Models(Models::CNN_M,"../onnx_fer_model.onnx");
 }
 
 ImageHandler::~ImageHandler(){
@@ -47,6 +47,19 @@ void ImageHandler::handle_image(const QPixmap& image,const qint64 w, const qint6
     }
     else if(eyes.size() < 2){
         std::cout <<"no eyes"<<std::endl;
+//        emit predictFaceExprerationFinished(QString("未监测到人脸"),0.00,QVector<float>{0,0,0,0,0,0,0});
+        //预测表情
+        cv::Mat rbg_face_image;
+        cv::cvtColor(face_image,rbg_face_image,cv::COLOR_GRAY2RGB);
+        std::string result_label;
+        float result_p;
+        std::vector<float> result_ps;
+        if(! cnn_model->runCNN(rbg_face_image,result_label,result_p,result_ps)){
+            qDebug()<<"get experation failed!";
+            return ;
+        }
+        emit predictFaceExprerationFinished(QString::fromStdString(result_label),result_p,QVector<float>(result_ps.begin(),result_ps.end()));
+
         return ;
     }
     else{
@@ -57,7 +70,9 @@ void ImageHandler::handle_image(const QPixmap& image,const qint64 w, const qint6
         pupil.push_back(cv::Point2d((eyes.at(1).x + eyes.at(1).width)/2,(eyes.at(1).y + eyes.at(1).height)/2));
         std::cout << "eye position:"<<pupil<<std::endl;
     }
-    _rotate_image(face_image,rotated_image,pupil.at(0).x>pupil.at(1).x?pupil.at(1):pupil.at(0),pupil.at(0).x>pupil.at(1).x?pupil.at(0):pupil.at(1));
+    cv::Mat rbg_face_image;
+    cv::cvtColor(face_image,rbg_face_image,cv::COLOR_GRAY2RGB);
+    _rotate_image(rbg_face_image,rotated_image,pupil.at(0).x>pupil.at(1).x?pupil.at(1):pupil.at(0),pupil.at(0).x>pupil.at(1).x?pupil.at(0):pupil.at(1));
 //    cv::imshow("rotated",rotated_image);
 //    cv::waitKey();
     //rotate test code
@@ -66,7 +81,21 @@ void ImageHandler::handle_image(const QPixmap& image,const qint64 w, const qint6
 //    cv::Mat des;
 
     //totate test pass
-    emit handleImageFinished(QPixmap::fromImage(MatToQImage(rotated_image)));
+    cv::Mat small_face_image;
+    cv::resize(rotated_image,small_face_image,cv::Size(),0.2,0.2);
+    emit handleImageFinished(QPixmap::fromImage(MatToQImage(small_face_image)));
+
+
+    //预测表情
+    std::string result_label;
+    float result_p;
+    std::vector<float> result_ps;
+    if(! cnn_model->runCNN(rotated_image,result_label,result_p,result_ps)){
+        qDebug()<<"get experation failed!";
+        return ;
+    }
+    emit predictFaceExprerationFinished(QString::fromStdString(result_label),result_p,QVector<float>(result_ps.begin(),result_ps.end()));
+
     return ;
 
 }

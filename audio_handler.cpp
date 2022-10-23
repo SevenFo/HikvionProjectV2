@@ -26,10 +26,10 @@ void audio_handler::doInferate(QByteArray d, qint64 sample_rate, qint64 sample_s
         qWarning()<<"length of input audio :"<<sample_length<<" not match the data size:"<<d.size();
         return;
     }
-    QFile f1("resample_org.pem");
-    f1.open(QFile::WriteOnly);
-    f1.write((char *)d.data(),d.size());
-    f1.close();
+//    QFile f1("resample_org.pem");
+//    f1.open(QFile::WriteOnly);
+//    f1.write((char *)d.data(),d.size());
+//    f1.close();
     std::vector<float> audio_data(sample_length),resampled_data;
     std::vector<float> result;
 
@@ -100,14 +100,14 @@ bool audio_handler::resample(qsizetype in_rate, qsizetype out_rate, const std::v
     if(outsize != rsize)
         outdata.resize(rsize);
 
-    QFile f1("resample_before.pem");
-    f1.open(QFile::WriteOnly);
-    f1.write((char *)indata.data(),indata.size()*sizeof(float));
-    f1.close();
-    f1.setFileName("resample_after.pem");
-    f1.open(QFile::WriteOnly);
-    f1.write((char *)outdata.data(),outdata.size()*sizeof (float));
-    f1.close();
+//    QFile f1("resample_before.pem");
+//    f1.open(QFile::WriteOnly);
+//    f1.write((char *)indata.data(),indata.size()*sizeof(float));
+//    f1.close();
+//    f1.setFileName("resample_after.pem");
+//    f1.open(QFile::WriteOnly);
+//    f1.write((char *)outdata.data(),outdata.size()*sizeof (float));
+//    f1.close();
 
 
     return true;

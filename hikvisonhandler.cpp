@@ -237,7 +237,7 @@ bool HikvisonHandler::StartDecodeV2()
 
     hasStartedDecode = true;;
 
-    SetupFaceDet();
+//    SetupFaceDet();
     return true;
 }
 

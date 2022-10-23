@@ -1,24 +1,20 @@
-#ifndef IMAGEHANDLER_H
-#define IMAGEHANDLER_H
-
-#include <QObject>
-#include <QPixmap>
-#include <QVector>
-#include <QDebug>
-#include "opencv2/opencv.hpp"
-#include <cmath>
+#ifndef FACEIMAGEHANDLER_H
+#define FACEIMAGEHANDLER_H
+#include <opencv2/opencv.hpp>
+#include "facedetectcnn.h"
 #include "models.h"
+#include <QObject>
+#include <QImage>
+#include <QPixmap>
+#include <QDebug>
+#define DETECT_BUFFER_SIZE 0x20000
 
-#define PI (acos(-1))
-
-
-class ImageHandler : public QObject
+class FaceImageHandler : public QObject
 {
     Q_OBJECT
-public:
-    explicit ImageHandler(QObject *parent = nullptr);
-    ~ImageHandler();
 
+public:
+    explicit FaceImageHandler(QObject *parent = nullptr);
     inline QImage MatToQImage(cv::Mat mtx)
     {
         switch (mtx.type())
@@ -84,12 +80,12 @@ public:
             }
 
             swapped = swapped.rgbSwapped();
-
-            return cv::Mat( swapped.height(), swapped.width(),
-                            CV_8UC3,
-                            const_cast<uchar*>(swapped.bits()),
-                            static_cast<size_t>(swapped.bytesPerLine())
-                            ).clone();
+            cv::Mat result = cv::Mat( swapped.height(), swapped.width(),
+                                      CV_8UC3,
+                                      const_cast<uchar*>(swapped.bits()),
+                                      static_cast<size_t>(swapped.bytesPerLine())
+                                      ).clone();
+            return result;
         }
 
         // 8-bit, 1 channel
@@ -117,40 +113,14 @@ public:
         return QImageToCvMat( inPixmap.toImage(), inCloneImageData );
     }
 
-    inline cv::Mat _rotate_image(const cv::Mat &in, cv::Mat &out, const cv::Point2d &left_eye, const cv::Point2d &right_eye)
-    {
-        auto x0 = (left_eye.x + right_eye.x)/2;
-        auto y0 = (left_eye.y + right_eye.y)/2;
-
-        auto x1 = left_eye.x;
-        auto y1 = left_eye.y;
-
-        auto x2 = right_eye.x;
-        auto y2 = right_eye.y;
-
-        auto dx =  x1-x0;
-        auto dy =  y1-y0;
-
-        auto alpha = std::atan(dy/dx)/PI * 180.0;
-//        std::cout<<"x0:"<<x0<<"y0:"<<y0<<"x1:"<<x1<<"y1:"<<y1<<"x2:"<<x2<<"y2:"<<y2<<"  dx:"<<dx<<",dy"<<dy<<" rotate degree:"<<alpha<<std::endl;
-
-        cv::Point2f center(in.cols/2,in.rows/2);
-
-        auto rotate_m = cv::getRotationMatrix2D(center,alpha,1);
-        cv::warpAffine(in,out,rotate_m,cv::Size(in.cols,in.rows));
-
-        return out;
-
-    }
-
-    void handle_image(const QPixmap &face_image,const qint64 w, const qint64 h);
+    int run(const QPixmap& image,const qint64 w, const qint64 h);
 private:
-    Models* cnn_model;
-
+    Models* cnn_model_;
+    int isTired(const cv::Mat& face_image);
 signals:
-    void handleImageFinished(QPixmap pixmap);
-    void predictFaceExprerationFinished(QString result_label, float p, QVector<float> ps);
+    void handleImageFinished(QPixmap pixmap, int is_tired);
+    void predictFaceExprerationFinished(QString result_label,int index, float p, QVector<float> ps);
 
 };
 
-#endif // IMAGEHANDLER_H
+#endif // FACEIMAGEHANDLER_H

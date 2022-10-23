@@ -1,4 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.5)
+## QT6_2_0
 
 project(HikvionProjectV2)
 
@@ -16,7 +17,9 @@ MESSAGE(STATUS "operation system is ${CMAKE_SYSTEM}")
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
     MESSAGE(STATUS "current platform: Linux ")
     set(HKVS_ROOT_DIR Hikvison)
-    set(OpenCV_ROOT_DIR /home/siky/Applications/opencv/build/install)
+#    set(OpenCV_ROOT_DIR /home/siky/Applications/opencv/build/install)
+    set(CANControl_ROOT_DIR CANControl/Linux_x86)
+    set(OpenCV_ROOT_DIR /usr/local/opencv-4.5.5)
 
     if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_objdetect)
@@ -67,11 +70,15 @@ ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 ELSE ()
     MESSAGE(STATUS "other platform: ${CMAKE_SYSTEM_NAME}")
 ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-
+set(FACEDETECTION_ROOT_PATH ./libfacedetection)
+set(FACEDETECTION_INCLUDE_DIRS ${FACEDETECTION_ROOT_PATH}/include)
+set(FACEDETECTION_LIBRARY_DIRS ${FACEDETECTION_ROOT_PATH}/lib)
+set(FACEDETECTION_LIBS facedetection)
 set(Hikvison_LIB_DIRS ${HKVS_ROOT_DIR}/lib ${HKVS_ROOT_DIR}/lib/HCNetSDKCom)
 set(Hikvison_INCLUDE_DIRS ${HKVS_ROOT_DIR}/include)
 set(OpenCV_LIB_DIRS ${OpenCV_ROOT_DIR}/lib)
-set(OpenCV_INCLUDE_DIRS ${OpenCV_ROOT_DIR}/include)
+set(OpenCV_INCLUDE_DIRS ${OpenCV_ROOT_DIR}/include/opencv4)
+set(CANControl_LIB_DIR ${CANControl_ROOT_DIR})
 set(ONNX_DIR onnxruntime-linux-x64-1.10.0)
 set(EIGEN_DIR "eigen-3.4.0")
 link_directories("${ONNX_DIR}/lib")
@@ -116,17 +123,18 @@ endmacro()
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets QuickWidgets Multimedia REQUIRED)
-
+find_package(Xlnt REQUIRED)
 
 include_directories(
     "./include",
     "include",
     "./${ONNX_DIR}/include",
-    "./${EIGEN_DIR}"
+    "./${EIGEN_DIR}",
+    "${FACEDETECTION_INCLUDE_DIRS}"
     )
 include_directories(${Hikvison_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-link_directories(${OpenCV_LIB_DIRS} ${Hikvison_LIB_DIRS})
+link_directories(${OpenCV_LIB_DIRS} ${Hikvison_LIB_DIRS} ${CANControl_LIB_DIR} ${FACEDETECTION_LIBRARY_DIRS})
 
 set(PROJECT_SOURCES
         qml.qrc
@@ -147,7 +155,10 @@ set(PROJECT_SOURCES
         crnn.cpp
         models.h models.cpp
         audio_handler.h audio_handler.cpp
-        imagehandler.h imagehandler.cpp
+#        imagehandler.h imagehandler.cpp
+        cancontroler.h cancontroler.cpp
+        cardatahandler.h cardatahandler.cpp
+        faceimagehandler.h faceimagehandler.cpp
 
 )
 
@@ -172,7 +183,7 @@ endif()
 
 
 target_link_libraries(HikvionProjectV2 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::QuickWidgets Qt${QT_VERSION_MAJOR}::Multimedia
-    ${OpenCV_LIBS} hcnetsdk PlayCtrl onnxruntime soxr)
+    ${OpenCV_LIBS} ${FACEDETECTION_LIBS} hcnetsdk PlayCtrl onnxruntime soxr controlcan xlnt)
 
 #target_link_libraries(HikvionProjectV2 PRIVATE paddle_inference.lib libyaml-cppmt.lib glog.lib)
 #target_link_libraries(HikisonProjectV2 PRIVATE megengine);

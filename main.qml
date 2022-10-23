@@ -156,7 +156,23 @@ Rectangle {
                                 id: switchStartDecode;
                                 text: "视频已关闭";
                                 enabled: false;
-                                onClicked: hikvison.startDecode();
+                                onClicked: function onClocked(){
+                                               hikvison.startDecode();
+                                               switchModeClassificaton.enabled = true;
+                                               switchModeClassificaton.checked = true;
+                                               switchModeClassificaton.text = qsTr("表情识别已开启");
+                                               switchTiredJudger.enabled = true;
+                                               switchTiredJudger.checked = true;
+
+                                               switchTiredJudger.text = qsTr("疲劳判断已开启");
+                                               switchAudioClassification.enabled = true;
+                                               switchAudioClassification.checked = true;
+                                               switchAudioClassification.text = qsTr("声音事件检测已开启");
+
+                                                textIsDriverTired.text= qsTr("驾驶员是否疲劳：否");
+                                    hikvison.focus=true;
+
+                            };
                             }
                         }
                         Row{
@@ -178,7 +194,7 @@ Rectangle {
                         Row{
                             Switch{
                                 id: switchAudioClassification;
-                                text: "音频检测已关闭";
+                                text: "声音事件检测已关闭";
                                 enabled: false;
                                 //                    onClicked: hikvison.startDecode();
                             }
@@ -195,7 +211,7 @@ Rectangle {
 
                 Rectangle {
                     width: 300
-                    height: 223
+                    height: 250
                     color: Qt.rgba(1,1,1,0.8)
                     radius: 10
                     Column {
@@ -204,8 +220,8 @@ Rectangle {
                         Row {
 
                             Text {
-                                id: text1
-                                text: qsTr("驾驶员状态：")
+                                id: textDriverFaceExpration
+                                text: qsTr("驾驶员表情：")
                                 font.pixelSize: 16
                                 padding: 6
                                 rightPadding: 6
@@ -214,12 +230,10 @@ Rectangle {
                                 topPadding: 6
                             }
                         }
-
                         Row {
-
                             Text {
-                                id: text2
-                                text: qsTr("发动机转速：")
+                                id: textIsDriverTired
+                                text: qsTr("驾驶员是否疲劳：")
                                 font.pixelSize: 16
                                 topPadding: 6
                                 bottomPadding: 6
@@ -229,10 +243,25 @@ Rectangle {
                             }
                         }
 
+
                         Row {
 
                             Text {
-                                id: text3
+                                id: textSpeed
+                                text: qsTr("车速：")
+                                font.pixelSize: 16
+                                topPadding: 6
+                                bottomPadding: 6
+                                padding: 6
+                                rightPadding: 6
+                                leftPadding: 6
+                            }
+                        }
+
+                        Row {
+
+                            Text {
+                                id: textBrakeAngle
                                 text: qsTr("制动踏板角度：")
                                 font.pixelSize: 16
                                 topPadding: 6
@@ -243,7 +272,7 @@ Rectangle {
                             }
 
                             Text {
-                                id: text4
+                                id: textSteeringAngle
                                 text: qsTr("方向盘角度：")
                                 font.pixelSize: 16
                                 topPadding: 6
@@ -256,7 +285,7 @@ Rectangle {
 
                         Row {
                             Text {
-                                id: text5
+                                id: textAudioEvent
                                 text: qsTr("车厢状态：")
                                 font.pixelSize: 16
                                 topPadding: 6
@@ -286,6 +315,51 @@ Rectangle {
 
     Connections{
         target: hikvison
+
+        function onIsTired(value){
+            if(value){
+                textIsDriverTired.text = qsTr("驾驶员是否疲劳：是");
+            }
+            else{
+                textIsDriverTired.text = qsTr("驾驶员是否疲劳：否");
+            }
+        }
+
+        function onGetSpeed(value){
+            textSpeed.text = qsTr("车速：" + value);
+        }
+
+        function onGetSteeringAngle(value){
+            textSteeringAngle.text = qsTr("方向盘角度：" + value);
+        }
+
+        function onGetBrakeAngle(value){
+            textBrakeAngle.text = qsTr("制动踏板角度：" + value);
+        }
+
+        function onDangerValueChecked(level){
+            if(level === 0){
+                textAlarmLevel.text = qsTr("警报等级"+"：无");
+            }
+            else if(level === 1){
+                textAlarmLevel.text = qsTr("警报等级"+"：低级警告");
+            }
+            else if(level === 2){
+                textAlarmLevel.text = qsTr("警报等级"+"：中级警告");
+            }
+            else{
+                textAlarmLevel.text = qsTr("警报等级"+"：高级警告");
+            }
+        }
+
+        function onGetAudioInferedResult(event_name){
+            textAudioEvent.text = qsTr("车厢状态："+event_name);
+        }
+
+        function onGetFaceExprationResult(label,p){
+            textDriverFaceExpration.text =  qsTr("驾驶员表情："+label);
+        }
+
         function onGetSnapedImage(pixmap,width,height){
             snapedFaceViewer.pixmap = pixmap;
             snapedFaceViewer.width = width;

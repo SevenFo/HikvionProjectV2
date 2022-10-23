@@ -32,7 +32,7 @@
     typedef  unsigned __int64   UINT64;
     typedef  signed   __int64   INT64;
 #elif defined(__linux__) || defined(__APPLE__) //linux
-    #define  BOOL  int
+//    #define  BOOL  int
     typedef  unsigned int       DWORD;
     typedef  unsigned short     WORD;
     typedef  unsigned short     USHORT;
@@ -45,6 +45,7 @@
     typedef  unsigned int*      LPDWORD; 
     typedef  unsigned long long UINT64;
     typedef  signed long long   INT64;
+    typedef  int                BOOL;
 
     #ifndef TRUE
         #define TRUE  1
